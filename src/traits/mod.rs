@@ -21,14 +21,125 @@ pub trait Curve<'a>: Clone + Debug {
         self.generator().mul(private_key)
     }
 
-    /// Signs a message hash using ECDSA with the given private key and nonce.
+    /// Signs a message hash using ECDSA with the given private key.
     ///
+    /// Generates a secure random nonce internally.
     /// Returns a Signature containing (r, s) components.
-    ///
-    /// # Panics
-    /// Panics if r or s is zero.
-    fn sign(&self, message_hash: &U1024, priv_key: &U1024, k_nonce: &U1024) -> Signature {
+    fn sign(
+        &self,
+        message_hash: &U1024,
+        priv_key: &U1024,
+    ) -> Result<Signature, crate::models::errors::SignatureError> {
+        use crate::models::errors::SignatureError;
+        use rand::RngCore;
+
         let scalar_params = self.scalar_params();
+        let n = &scalar_params.modulus;
+
+        // 1. Validate inputs
+        // Check if priv_key is zero
+        let priv_key_is_zero = priv_key == &U1024::zero();
+
+        // Manual comparison for priv_key >= n using div_rem
+        // if priv_key >= n, then priv_key / n >= 1
+        let (q, _) = priv_key.div_rem(n);
+        let priv_key_ge_n = q != U1024::zero();
+
+        if priv_key_is_zero || priv_key_ge_n {
+            return Err(SignatureError::InvalidPrivateKey);
+        }
+
+        let generator = self.generator();
+
+        // Loop until valid signature is generated (probabilistic)
+        loop {
+            // 2. Generate random nonce k in [1, n-1]
+            let mut k_bytes = [0u8; 128]; // 1024 bits
+            rand::rng().fill_bytes(&mut k_bytes);
+
+            // Masking is not strictly necessary as we do modulo, but good practice
+            // Since from_le_bytes is missing, we might have to construct differently.
+            // But wait, the previous code used U1024::from_le_bytes but error was about it missing?
+            // "no function or associated item named `from_le_bytes` found for struct `U1024`"
+            // We need to see what constructors U1024 has.
+            // It has from_u64. Maybe we can construct limb by limb?
+            // "pub struct U1024(pub [u64; LIMBS]);"
+            // LIMBS = 1024/64 = 16.
+
+            let mut limbs = [0u64; 16];
+            for i in 0..16 {
+                let mut ndata = [0u8; 8];
+                ndata.copy_from_slice(&k_bytes[i * 8..(i + 1) * 8]);
+                limbs[i] = u64::from_le_bytes(ndata);
+            }
+            let k_full = U1024(limbs); // Direct construction since field is pub
+
+            // k = k_full % (n - 1) + 1  => ensures range [1, n-1]
+            let (_q, rem) = k_full.div_rem(n);
+            let k_nonce = if rem == U1024::zero() {
+                continue;
+            } else {
+                rem
+            };
+
+            // 3. r = (k * G).x mod n
+            let r_point = generator.mul(&k_nonce);
+            let (r_x_elem, _) = r_point.to_affine();
+
+            let r_val = r_x_elem.to_u1024();
+            let r_elem = FieldElement::new(r_val, scalar_params);
+            let r = r_elem.to_u1024();
+
+            if r == U1024::zero() {
+                continue; // Retry with new k
+            }
+
+            // 4. s = k^(-1) * (z + r * d) mod n
+            let k_elem = FieldElement::new(k_nonce, scalar_params);
+            let z_elem = FieldElement::new(*message_hash, scalar_params);
+            let d_elem = FieldElement::new(*priv_key, scalar_params);
+
+            let k_inv = k_elem.inv();
+            // s = k_inv * (z + r * d)
+            // r * d
+            let rd = r_elem * d_elem;
+            // z + r*d
+            let z_rd = z_elem + rd;
+            let s_elem = k_inv * z_rd;
+
+            let s = s_elem.to_u1024();
+            if s == U1024::zero() {
+                continue; // Retry with new k
+            }
+
+            return Ok(Signature::new(r, s));
+        }
+    }
+
+    /// Sign with explicit nonce (TESTING ONLY)
+    ///
+    /// # Safety
+    /// This method allows specifying the nonce k manually.
+    /// REUSING A NONCE COMPLETELY COMPROMISES THE PRIVATE KEY.
+    /// DO NOT USE UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING.
+    fn sign_with_nonce(
+        &self,
+        message_hash: &U1024,
+        priv_key: &U1024,
+        k_nonce: &U1024,
+    ) -> Result<Signature, crate::models::errors::SignatureError> {
+        use crate::models::errors::SignatureError;
+
+        let scalar_params = self.scalar_params();
+        let n = &scalar_params.modulus;
+
+        if priv_key == &U1024::zero() || priv_key >= n {
+            return Err(SignatureError::InvalidPrivateKey);
+        }
+        if k_nonce == &U1024::zero() || k_nonce >= n {
+            return Err(SignatureError::InvalidNonce);
+        }
+
         let generator = self.generator();
 
         let r_point = generator.mul(k_nonce);
@@ -39,7 +150,7 @@ pub trait Curve<'a>: Clone + Debug {
         let r = r_elem.to_u1024();
 
         if r == U1024::zero() {
-            panic!("r cannot be zero");
+            return Err(SignatureError::SignatureGenerationFailed); // r=0 is just bad luck/params for deterministic
         }
 
         let k_elem = FieldElement::new(*k_nonce, scalar_params);
@@ -51,10 +162,10 @@ pub trait Curve<'a>: Clone + Debug {
 
         let s = s_elem.to_u1024();
         if s == U1024::zero() {
-            panic!("s cannot be zero");
+            return Err(SignatureError::SignatureGenerationFailed);
         }
 
-        Signature::new(r, s)
+        Ok(Signature::new(r, s))
     }
 
     /// Verifies an ECDSA signature against a message hash and public key.
