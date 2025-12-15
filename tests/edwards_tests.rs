@@ -1,12 +1,10 @@
 use curvelib::{
-    curves::tiny_jubjub,
-    models::{short_weierstrass::WeierstrassCurve, twisted_edwards::TePoint},
+    algebra::fields::Fp,
+    instances::tiny_jubjub,
+    models::{TePoint, WeierstrassCurve},
     traits::{Curve, ProjectivePoint},
 };
-use mathlib::{
-    BigInt, U1024,
-    field::{element::FieldElement, montgomery::MontgomeryParams},
-};
+use mathlib::{BigInt, U1024, field::montgomery::MontgomeryParams};
 
 #[test]
 fn test_tiny_jubjub_addition() {
@@ -14,15 +12,15 @@ fn test_tiny_jubjub_addition() {
     let params = curve.params;
 
     let p1 = TePoint::new_affine(
-        FieldElement::new(U1024::from_u64(0), params),
-        FieldElement::new(U1024::from_u64(1), params),
+        Fp::new(U1024::from_u64(0), params),
+        Fp::new(U1024::from_u64(1), params),
         &curve,
     );
     assert!(p1.is_identity());
 
     let p2 = TePoint::new_affine(
-        FieldElement::new(U1024::from_u64(1), params),
-        FieldElement::new(U1024::from_u64(2), params),
+        Fp::new(U1024::from_u64(1), params),
+        Fp::new(U1024::from_u64(2), params),
         &curve,
     );
 
@@ -42,21 +40,28 @@ fn test_tiny_jubjub_addition() {
     println!("2 * (1,2) = ({:?}, {:?})", x.to_u1024(), y.to_u1024());
 }
 
-/// Verifies that doubling the identity point on a Weierstrass curve produces the identity point.
+/// Checks that doubling the identity point on a Weierstrass curve yields the identity.
 ///
 /// # Examples
 ///
 /// ```
-/// use mathlib::{U1024, MontgomeryParams, FieldElement};
+/// use mathlib::{U1024, Fp, field::montgomery::MontgomeryParams};
 /// use short_weierstrass::WeierstrassCurve;
 ///
 /// let mut p_val = U1024::zero();
 /// p_val.0[0] = 43;
 /// let params = MontgomeryParams::new(p_val, U1024::zero());
 ///
-/// let a = FieldElement::new(U1024::from_u64(23), &params);
-/// let b = FieldElement::new(U1024::from_u64(42), &params);
-/// let curve = WeierstrassCurve::new(a, b, &params);
+/// let a = Fp::new(U1024::from_u64(23), &params);
+/// let b = Fp::new(U1024::from_u64(42), &params);
+/// let curve = WeierstrassCurve::new(
+///     a,
+///     b,
+///     &params,
+///     &params,
+///     Fp::new(U1024::from_u64(1), &params),
+///     Fp::new(U1024::from_u64(1), &params),
+/// );
 ///
 /// let g = curve.identity();
 /// let g2 = g.double();
@@ -69,15 +74,15 @@ fn test_tiny_curve_operations() {
     p_val.0[0] = 43;
     let params = MontgomeryParams::new(p_val, U1024::zero());
 
-    let a = FieldElement::new(U1024::from_u64(23), &params);
-    let b = FieldElement::new(U1024::from_u64(42), &params);
+    let a = Fp::new(U1024::from_u64(23), &params);
+    let b = Fp::new(U1024::from_u64(42), &params);
     let curve = WeierstrassCurve::new(
         a,
         b,
         &params,
         &params,
-        U1024::from_u64(1),
-        U1024::from_u64(1),
+        Fp::new(U1024::from_u64(1), &params),
+        Fp::new(U1024::from_u64(1), &params),
     );
 
     let g = curve.identity();
