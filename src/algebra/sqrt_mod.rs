@@ -1,5 +1,26 @@
 use mathlib::{BigInt, FieldElement, U1024};
 
+/// Compute a modular square root of `n` in its prime field using the Tonelli–Shanks algorithm.
+///
+/// Attempts to find `r` such that `r * r == n` in the field of `n`. Handles the zero case,
+/// uses Euler's criterion to test quadratic residuosity, applies the P ≡ 3 (mod 4) shortcut
+/// when applicable, and otherwise runs the Tonelli–Shanks iteration to produce a root.
+///
+/// # Returns
+///
+/// `Some(root)` containing a field element `r` such that `r * r == n` when a root exists, `None` otherwise.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Constructing fields and elements depends on the surrounding library; this shows intended usage.
+/// // let params = FieldParams::new(...);
+/// // let n = FieldElement::new(U1024::from_u64(10), &params);
+/// // match sqrt_mod(&n) {
+/// //     Some(r) => assert_eq!(r * r, n),
+/// //     None => println!("no square root exists for n in this field"),
+/// // }
+/// ```
 pub fn sqrt_mod<'a>(n: &FieldElement<'a>) -> Option<FieldElement<'a>> {
     let params = n.params;
     let zero = FieldElement::zero(params);

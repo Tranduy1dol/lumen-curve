@@ -13,6 +13,25 @@ def_fp6!(Fp6, Fp2<'a>);
 
 impl<'a> Mul for Fp6<'a> {
     type Output = Self;
+    /// Multiply two Fp6 field elements.
+    ///
+    /// The product is computed in the cubic extension Fp6 = Fp2[v]/(v^3 - ξ) using the
+    /// relation v^3 = ξ, v^4 = ξ v, v^5 = ξ v^2. This implementation assumes the
+    /// cubic non-residue `ξ` equals `1`.
+    ///
+    /// # Returns
+    ///
+    /// `Self` representing the product of the two Fp6 elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Constructing concrete Fp6 values depends on curve-specific parameters;
+    /// // this sketch shows the intended usage.
+    /// let a = /* an Fp6 value */ unimplemented!();
+    /// let b = /* another Fp6 value */ unimplemented!();
+    /// let _product = a * b;
+    /// ```
     fn mul(self, rhs: Self) -> Self {
         // Cubic extension field multiplication: (a + bv + cv²)(d + ev + fv²)
         // Using Karatsuba-like optimization for 6 -> 5 multiplications
@@ -58,6 +77,17 @@ impl<'a> Mul for Fp6<'a> {
 }
 
 impl<'a> Field<'a> for Fp6<'a> {
+    /// Constructs the additive identity element of Fp6 using the given Montgomery parameters.
+    ///
+    /// All three underlying Fp2 components (c0, c1, c2) are set to zero.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // given `params: &MontgomeryParams`
+    /// let z = Fp6::zero(params);
+    /// assert!(z.is_zero());
+    /// ```
     fn zero(params: &'a MontgomeryParams) -> Self {
         let z = Fp2::zero(params);
         Self {
@@ -66,9 +96,33 @@ impl<'a> Field<'a> for Fp6<'a> {
             c2: z,
         }
     }
+    /// Checks whether the element is the additive zero.
+    ///
+    /// # Returns
+    /// `true` if all three Fp2 components (`c0`, `c1`, and `c2`) are zero, `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # let params = /* MontgomeryParams */ unimplemented!();
+    /// let z = Fp6::zero(&params);
+    /// assert!(z.is_zero());
+    /// ```
     fn is_zero(&self) -> bool {
         self.c0.is_zero() && self.c1.is_zero() && self.c2.is_zero()
     }
+    /// Constructs the multiplicative identity element of Fp6.
+    ///
+    /// The returned element has c0 = Fp2::one(params) and c1 = c2 = Fp2::zero(params).
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let one = Fp6::one(params);
+    /// assert_eq!(one.c0, Fp2::one(params));
+    /// assert_eq!(one.c1, Fp2::zero(params));
+    /// assert_eq!(one.c2, Fp2::zero(params));
+    /// ```
     fn one(params: &'a MontgomeryParams) -> Self {
         let z = Fp2::zero(params);
         let o = Fp2::one(params);
@@ -79,19 +133,83 @@ impl<'a> Field<'a> for Fp6<'a> {
         }
     }
 
+    /// Attempts to compute the multiplicative inverse of this Fp6 element.
+    ///
+    /// The inversion operation is not implemented in this type and this method always returns `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let params = /* obtain MontgomeryParams instance */ unimplemented!();
+    /// let a = Fp6::one(&params);
+    /// assert_eq!(a.inv(), None);
+    /// ```
     fn inv(&self) -> Option<Self> {
         None
     }
+    /// Compute the sum of the element with itself.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let a = Fp6::zero(params); // `params` is a `&MontgomeryParams` available in scope
+    /// let doubled = a.double();
+    /// assert!(doubled.is_zero());
+    /// ```
     fn double(&self) -> Self {
         *self + *self
     }
+    /// Multiplies two Fp6 elements and returns their product.
+    ///
+    /// # Returns
+    ///
+    /// The product of `self` and `rhs` as an `Fp6`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use crate::algebra::fields::fp6::Fp6;
+    /// # use crate::mathlib::field::montgomery::MontgomeryParams;
+    /// // `params` should be the appropriate Montgomery parameters for the base field.
+    /// let params = /* obtain MontgomeryParams */ unimplemented!();
+    /// let a = Fp6::one(&params);
+    /// let b = Fp6::one(&params);
+    /// let c = a.mul(&b);
+    /// assert_eq!(c, Fp6::one(&params));
+    /// ```
     fn mul(&self, rhs: &Self) -> Self {
         *self * *rhs
     }
+    /// Adds two Fp6 elements and returns their sum.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // `params` is a reference to MontgomeryParams required to construct field elements.
+    /// let a = Fp6::zero(params);
+    /// let b = Fp6::one(params);
+    /// let c = a.add(&b);
+    /// assert_eq!(c, b);
+    /// ```
     fn add(&self, rhs: &Self) -> Self {
         *self + *rhs
     }
 
+    /// Squares the field element.
+    ///
+    /// # Returns
+    ///
+    /// The product of the element with itself.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // `params` should be a reference to the Montgomery parameters for the base field.
+    /// let params = /* obtain MontgomeryParams */ unimplemented!();
+    /// let x = Fp6::one(params);
+    /// let y = x.square();
+    /// assert_eq!(y, x * x);
+    /// ```
     fn square(&self) -> Self {
         *self * *self
     }

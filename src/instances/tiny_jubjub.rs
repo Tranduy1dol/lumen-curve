@@ -31,8 +31,16 @@ pub fn get_generator_coords() -> (U1024, U1024) {
     (U1024::from_u64(6), U1024::from_u64(9))
 }
 
-/// Returns the tiny jubjub Edwards curve with a = 3, d = 8 over F_13.
-/// Generator point is (1, 2) which is on the curve.
+/// Tiny Jubjub twisted Edwards curve over F_13 with curve parameters a = 3 and d = 8.
+///
+/// The curve is constructed using the crate's tiny field and scalar parameters. The
+/// generator point used is (6, 9) (as U1024 values) and has order 5.
+///
+/// # Examples
+///
+/// ```
+/// let _curve = get_curve();
+/// ```
 pub fn get_curve() -> EdwardsCurve<'static> {
     let params = get_tiny_params();
     let scalar_params = get_scalar_params();
