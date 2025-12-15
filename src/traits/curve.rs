@@ -18,17 +18,45 @@ pub trait Curve<'a>: Clone + Debug {
     fn scalar_params(&self) -> &'a MontgomeryParams;
     fn generator(&self) -> Self::Point;
 
-    /// Generates a keypair (private_key, public_key) from a random scalar.
+    /// Computes the public key corresponding to a private scalar by multiplying the curve generator by that scalar.
     ///
-    /// The private key is the scalar, and the public key is scalar * generator.
+    /// The provided `private_key` is treated as the scalar secret; callers must ensure it is a valid private key for the curve (e.g., greater than zero and less than the curve order).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Given a curve `C` and a private scalar `d` (U1024):
+    /// // let pub = C.generate_keypair(&d);
+    /// // `pub` is the point d * G (the public key).
+    /// ```
     fn generate_keypair(&self, private_key: &U1024) -> Self::Point {
         self.generator().mul(private_key)
     }
 
-    /// Signs a message hash using ECDSA with the given private key.
+    /// Creates an ECDSA-style signature for `message_hash` using `priv_key`.
     ///
-    /// Generates secure random nonce internally.
-    /// Returns a Signature containing (r, s) components.
+    /// The method validates the private key and produces a signature (r, s). It uses
+    /// a fresh cryptographic nonce for each attempt and will retry internally until
+    /// a valid signature is produced or the private key is rejected.
+    ///
+    /// # Errors
+    ///
+    /// Returns `SignatureError::InvalidPrivateKey` when `priv_key` is zero or greater
+    /// than or equal to the curve order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Example: sign a message hash with a private key and verify the returned Signature
+    /// # use crate::models::errors::SignatureError;
+    /// # use crate::models::signature::Signature;
+    /// # // assume `curve` implements the Curve trait and `msg`, `sk` are available U1024 values
+    /// # let curve = /* ... */ panic!();
+    /// # let msg = /* ... */ panic!();
+    /// # let sk = /* ... */ panic!();
+    /// let sig = curve.sign(&msg, &sk).expect("failed to sign");
+    /// // `sig` is a Signature containing `r` and `s` components
+    /// ```
     fn sign(
         &self,
         message_hash: &U1024,
@@ -114,12 +142,24 @@ pub trait Curve<'a>: Clone + Debug {
         }
     }
 
-    /// Sign with explicit nonce (TESTING ONLY)
+    /// Generate an ECDSA-like signature for `message_hash` using the provided nonce `k_nonce` (TESTING ONLY).
     ///
     /// # Safety
-    /// This method allows specifying the nonce k manually.
-    /// REUSING NONCE COMPLETELY COMPROMISES THE PRIVATE KEY.
-    /// DO NOT USE UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING.
+    /// This method accepts an explicit nonce. Reusing or exposing the same nonce for multiple signatures
+    /// completely compromises the private key. Do not use in production or unless you fully understand the risk.
+    ///
+    /// # Errors
+    /// Returns `Err(SignatureError::InvalidPrivateKey)` if `priv_key` is zero or not less than the curve order,
+    /// `Err(SignatureError::InvalidNonce)` if `k_nonce` is zero or not less than the curve order,
+    /// and `Err(SignatureError::SignatureGenerationFailed)` if the generated `r` or `s` equals zero.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Example (conceptual): sign deterministically with a test-only nonce.
+    /// // let sig = curve.sign_with_nonce(&message_hash, &private_key, &k_nonce).unwrap();
+    /// // assert!(sig.r != 0 && sig.s != 0);
+    /// ```
     #[cfg(feature = "test")]
     fn sign_with_nonce(
         &self,
@@ -170,9 +210,22 @@ pub trait Curve<'a>: Clone + Debug {
         Ok(Signature::new(r, s))
     }
 
-    /// Verifies an ECDSA signature against a message hash and public key.
+    /// Verifies an ECDSA-style signature against a message hash and public key.
     ///
-    /// Returns true if the signature is valid, false otherwise.
+    /// Performs all canonical checks: rejects the identity or off-curve public keys, enforces
+    /// that the public key lies in the prime-order subgroup (n*Q == identity), and verifies
+    /// that r and s are in the valid range before performing the ECDSA verification equations.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the signature is valid, `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // Given `curve`, `sig`, `msg_hash`, and `pub_key` constructed appropriately:
+    /// let valid = curve.verify(&sig, &msg_hash, &pub_key);
+    /// ```
     fn verify(&self, signature: &Signature, message_hash: &U1024, pub_key: &Self::Point) -> bool
     where
         <Self::Point as ProjectivePoint<'a>>::Field: ToU1024,
@@ -232,6 +285,17 @@ pub trait ToU1024 {
 }
 
 impl<'a> ToU1024 for FieldElement<'a> {
+    /// Convert this field element into its canonical `U1024` representation.
+    ///
+    /// Produces a `U1024` integer containing the field element's canonical limb/value encoding.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // obtain a FieldElement `fe` from your curve/field context
+    /// // let fe: FieldElement = ...;
+    /// // let u: U1024 = fe.to_u1024_val();
+    /// ```
     fn to_u1024_val(&self) -> U1024 {
         self.to_u1024()
     }

@@ -2,6 +2,25 @@ use mathlib::U1024;
 
 use crate::{algebra::fields::Fp6, traits::Field};
 
+/// Compute exponentiation of an Fp6 element by an integer exponent using square-and-multiply.
+///
+/// # Parameters
+/// - `f`: base element in Fp6.
+/// - `exponent`: exponent as a `U1024` integer.
+///
+/// # Returns
+/// The value `f` raised to `exponent` in the Fp6 field.
+///
+/// # Examples
+///
+/// ```
+/// // Construct params, a base `f` and an exponent `exp` suitable for your context.
+/// let params = /* obtain parameters */ unimplemented!();
+/// let f = Fp6::one(params); // example base
+/// let exp = U1024::from(3u64); // example exponent = 3
+/// let r = final_exponentiation(&f, &exp);
+/// assert_eq!(r, f * f * f);
+/// ```
 pub fn final_exponentiation<'a>(f: &Fp6<'a>, exponent: &U1024) -> Fp6<'a> {
     // Perform f ^ exponent using Square-and-Multiply
     // Note: f is in Fp6.

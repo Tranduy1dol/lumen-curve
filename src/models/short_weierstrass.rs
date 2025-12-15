@@ -45,13 +45,18 @@ impl<'a> Curve<'a> for WeierstrassCurve<'a> {
         }
     }
 
-    /// Determines whether the given affine point lies on this Weierstrass curve.
-    ///
-    /// - `x`: Affine x-coordinate of the point.
-    /// - `y`: Affine y-coordinate of the point.
+    /// Returns whether the affine point (x, y) satisfies this curve's short Weierstrass equation.
     ///
     /// # Returns
-    /// `true` if `y^2 = x^3 + a*x + b` holds for this curve's parameters, `false` otherwise.
+    ///
+    /// `true` if `y^2 = x^3 + a*x + b` for this curve's parameters, `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // given a `curve: WeierstrassCurve` and field elements `x`, `y`:
+    /// let valid = curve.is_on_curve(&x, &y);
+    /// ```
     fn is_on_curve(
         &self,
         x: &<Self::Point as ProjectivePoint<'a>>::Field,
@@ -65,10 +70,31 @@ impl<'a> Curve<'a> for WeierstrassCurve<'a> {
         y2 == rhs
     }
 
+    /// Accesses the curve's Montgomery scalar parameters.
+    ///
+    /// Returns a reference to the `MontgomeryParams` used for scalar arithmetic on this curve.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // `curve` is a `WeierstrassCurve` instance
+    /// let params = curve.scalar_params();
+    /// // `params` is a `&MontgomeryParams` for scalar operations
+    /// ```
     fn scalar_params(&self) -> &'a MontgomeryParams {
         self.scalar_params
     }
 
+    /// Constructs the curve's generator point in projective coordinates (with z = 1).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // given a `curve` value of type `WeierstrassCurve<'_>`
+    /// let g = curve.generator();
+    /// let (x, y) = g.to_affine();
+    /// assert!(curve.is_on_curve(&x, &y));
+    /// ```
     fn generator(&self) -> Self::Point {
         let x = self.generator_x;
         let y = self.generator_y;
@@ -108,34 +134,27 @@ impl<'a> PartialEq for SWPoint<'a> {
 impl<'a> Eq for SWPoint<'a> {}
 
 impl<'a> SWPoint<'a> {
-    /// Constructs a projective curve point from affine coordinates, treating (0, 0) as the point at infinity.
+    /// Constructs a projective point from affine coordinates, treating (0, 0) as the point at infinity.
     ///
-    /// If `x` and `y` are both zero, the curve identity is returned; otherwise the point is returned with `z = 1`.
+    /// If both `x` and `y` are zero the curve identity is returned; otherwise returns the point with `z = 1`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use mathlib::{U1024, BigInt};
+    /// use mathlib::{U1024};
     /// use mathlib::field::montgomery::MontgomeryParams;
     /// use curvelib::models::short_weierstrass::{WeierstrassCurve, SWPoint};
-    /// use curvelib::traits::{Curve, ProjectivePoint};
     /// use curvelib::algebra::fields::fp::Fp;
-    /// use curvelib::traits::Field;
     ///
-    /// let p = U1024::from_u64(17);
-    /// let params = MontgomeryParams::new(p, U1024::zero());
+    /// let params = MontgomeryParams::new(U1024::from_u64(17), U1024::zero());
     /// let a = Fp::new(U1024::from_u64(1), &params);
     /// let b = Fp::new(U1024::from_u64(1), &params);
-    /// let curve = WeierstrassCurve::new(a, b, &params, &params, Fp::new(U1024::from_u64(1), &params), Fp::new(U1024::from_u64(1), &params));
+    /// let curve = WeierstrassCurve::new(a, b, &params, &params, Fp::one(&params), Fp::one(&params));
     ///
-    /// let x = Fp::one(&params);
-    /// let y = Fp::one(&params);
-    /// let p = SWPoint::new_affine(x, y, &curve);
-    /// // Note: (1,1) might not be on the curve y^2 = x^3 + x + 1 mod 17, but new_affine constructs it anyway.
+    /// let p = SWPoint::new_affine(Fp::one(&params), Fp::one(&params), &curve);
     /// assert!(!p.is_identity());
     ///
-    /// let z0 = Fp::zero(&params);
-    /// let id = SWPoint::new_affine(z0.clone(), z0, &curve);
+    /// let id = SWPoint::new_affine(Fp::zero(&params), Fp::zero(&params), &curve);
     /// assert!(id.is_identity());
     /// ```
     pub fn new_affine(x: Fp<'a>, y: Fp<'a>, curve: &'a WeierstrassCurve<'a>) -> Self {
@@ -265,9 +284,11 @@ impl<'a> ProjectivePoint<'a> for SWPoint<'a> {
         }
     }
 
-    /// Doubles this point on its associated Weierstrass curve using projective coordinates.
+    /// Compute the doubling of this point on its short Weierstrass curve using projective coordinates.
     ///
-    /// Returns the point 2P; if this point is the identity (point at infinity), returns a clone of it.
+    /// # Returns
+    ///
+    /// `Self` representing the point 2P; if this point is the identity (point at infinity), returns a clone of it.
     ///
     /// # Examples
     ///
@@ -277,7 +298,6 @@ impl<'a> ProjectivePoint<'a> for SWPoint<'a> {
     /// use curvelib::models::short_weierstrass::WeierstrassCurve;
     /// use curvelib::traits::{Curve, ProjectivePoint};
     /// use curvelib::algebra::fields::fp::Fp;
-    /// use curvelib::traits::Field;
     ///
     /// let p = U1024::from_u64(17);
     /// let params = MontgomeryParams::new(p, U1024::zero());
@@ -325,10 +345,9 @@ impl<'a> ProjectivePoint<'a> for SWPoint<'a> {
         }
     }
 
-    /// Convert this projective point to affine coordinates.
+    /// Converts this projective point to affine coordinates.
     ///
-    /// Returns a pair `(x, y)` representing the affine coordinates of the point. If the point is the
-    /// identity (point at infinity), it returns `(0, 0)`.
+    /// Returns `(x, y)` as affine coordinates; returns `(0, 0)` when the point is the identity (point at infinity).
     ///
     /// # Examples
     ///
@@ -338,7 +357,6 @@ impl<'a> ProjectivePoint<'a> for SWPoint<'a> {
     /// use curvelib::models::short_weierstrass::WeierstrassCurve;
     /// use curvelib::traits::{Curve, ProjectivePoint};
     /// use curvelib::algebra::fields::fp::Fp;
-    /// use curvelib::traits::Field;
     ///
     /// let p = U1024::from_u64(17);
     /// let params = MontgomeryParams::new(p, U1024::zero());

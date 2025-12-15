@@ -7,26 +7,17 @@ use crate::traits::{Curve, Field, ProjectivePoint};
 impl<'a> Curve<'a> for EdwardsCurve<'a> {
     type Point = TePoint<'a>;
 
-    /// Constructs the identity (neutral) point for this Edwards curve.
+    /// Returns the identity point on this Edwards curve in extended/projective coordinates.
     ///
-    /// Returns the identity point in projective/extended coordinates: x = 0, y = 1, z = 1, t = 0, tied to this curve.
+    /// The identity has coordinates x = 0, y = 1, z = 1, t = 0 and is bound to this curve.
     ///
     /// # Examples
     ///
     /// ```
-    /// use mathlib::{U1024, BigInt};
-    /// use mathlib::field::{montgomery::MontgomeryParams};
-    /// use curvelib::models::twisted_edwards::EdwardsCurve;
-    /// use curvelib::traits::{Curve, ProjectivePoint};
-    /// use curvelib::traits::Field;
-    /// use curvelib::algebra::fields::fp::Fp;
-    ///
-    /// let p = U1024::from_u64(17);
-    /// let params = MontgomeryParams::new(p, U1024::zero());
+    /// let params = MontgomeryParams::new(U1024::from_u64(17), U1024::zero());
     /// let a = Fp::new(U1024::from_u64(1), &params);
     /// let d = Fp::new(U1024::from_u64(2), &params);
     /// let curve = EdwardsCurve::new(a, d, &params, &params, U1024::from_u64(0), U1024::from_u64(1));
-    ///
     /// let id = curve.identity();
     /// let (x, y) = id.to_affine();
     /// assert_eq!(x, Fp::zero(&params));
@@ -45,13 +36,13 @@ impl<'a> Curve<'a> for EdwardsCurve<'a> {
         }
     }
 
-    /// Checks whether an affine point (x, y) satisfies the Edwards curve equation.
+    /// Determines whether an affine point (x, y) satisfies the Edwards curve equation.
     ///
     /// Returns `true` if the coordinates satisfy a*x^2 + y^2 = 1 + d*x^2*y^2, `false` otherwise.
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust
     /// use mathlib::{U1024, BigInt};
     /// use mathlib::field::{montgomery::MontgomeryParams};
     /// use curvelib::models::twisted_edwards::EdwardsCurve;
@@ -84,10 +75,33 @@ impl<'a> Curve<'a> for EdwardsCurve<'a> {
         lhs == rhs
     }
 
+    /// Returns a reference to the curve's scalar-field Montgomery parameters.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // `curve` is an existing `EdwardsCurve<'_>`.
+    /// let p1 = curve.scalar_params();
+    /// let p2 = curve.scalar_params();
+    /// assert!(std::ptr::eq(p1, p2));
+    /// ```
     fn scalar_params(&self) -> &'a MontgomeryParams {
         self.scalar_params
     }
 
+    /// Constructs the curve's generator point in extended/projective coordinates.
+    ///
+    /// The returned point uses the curve's stored generator_x and generator_y as affine
+    /// coordinates, sets `z` to one, computes `t = x * y`, and clones the curve reference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // `curve` is an existing `EdwardsCurve`.
+    /// let g = curve.generator();
+    /// let (gx, gy) = g.to_affine();
+    /// assert!(curve.is_on_curve(&gx, &gy));
+    /// ```
     fn generator(&self) -> Self::Point {
         let x = Fp::new(self.generator_x, self.params);
         let y = Fp::new(self.generator_y, self.params);
@@ -114,6 +128,23 @@ pub struct EdwardsCurve<'a> {
 }
 
 impl<'a> EdwardsCurve<'a> {
+    /// Creates a new EdwardsCurve with the specified curve parameters and generator.
+    ///
+    /// - `a` and `d` are the Edwards curve parameters in the base field.
+    /// - `params` are the Montgomery parameters for the base field.
+    /// - `scalar_params` are the Montgomery parameters for the scalar field.
+    /// - `generator_x` and `generator_y` are the affine coordinates of the curve generator as `U1024`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Constructing a curve (values are illustrative)
+    /// let a = Fp::one(params);
+    /// let d = Fp::new(5u64, params);
+    /// let curve = EdwardsCurve::new(a, d, params, scalar_params, generator_x, generator_y);
+    /// assert_eq!(curve.generator_x, generator_x);
+    /// assert_eq!(curve.generator_y, generator_y);
+    /// ```
     pub fn new(
         a: Fp<'a>,
         d: Fp<'a>,
@@ -207,22 +238,16 @@ impl<'a> TePoint<'a> {
 impl<'a> ProjectivePoint<'a> for TePoint<'a> {
     type Field = Fp<'a>;
 
-    /// Checks whether this point is the identity element on its Edwards curve.
+    /// Determines whether the point is the identity element on its Edwards curve.
     ///
-    /// The identity is encoded in projective/extended coordinates as `x == 0` and `y == z`.
-    ///
-    /// # Returns
-    ///
-    /// `true` if the point is the identity element, `false` otherwise.
+    /// The identity is encoded in extended/projective coordinates as `x == 0` and `y == z`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use mathlib::{U1024, BigInt};
-    /// use mathlib::field::{montgomery::MontgomeryParams};
+    /// use mathlib::U1024;
+    /// use mathlib::field::montgomery::MontgomeryParams;
     /// use curvelib::models::twisted_edwards::{EdwardsCurve, TePoint};
-    /// use curvelib::traits::{Curve, ProjectivePoint};
-    /// use curvelib::traits::Field;
     /// use curvelib::algebra::fields::fp::Fp;
     ///
     /// let p = U1024::from_u64(17);
@@ -230,7 +255,6 @@ impl<'a> ProjectivePoint<'a> for TePoint<'a> {
     /// let a = Fp::new(U1024::from_u64(1), &params);
     /// let d = Fp::new(U1024::from_u64(2), &params);
     /// let curve = EdwardsCurve::new(a, d, &params, &params, U1024::from_u64(0), U1024::from_u64(1));
-    ///
     /// let id = TePoint::new_affine(Fp::zero(&params), Fp::one(&params), &curve);
     /// assert!(id.is_identity());
     /// ```
@@ -297,18 +321,15 @@ impl<'a> ProjectivePoint<'a> for TePoint<'a> {
         }
     }
 
-    /// Doubles this point on the Edwards curve.
-    ///
-    /// Computes the curve point 2P using the point's projective/extended representation.
+    /// Computes the Edwards-curve point 2P for this point in extended projective coordinates.
     ///
     /// # Examples
     ///
     /// ```
     /// use mathlib::{U1024, BigInt};
-    /// use mathlib::field::{montgomery::MontgomeryParams};
+    /// use mathlib::field::montgomery::MontgomeryParams;
     /// use curvelib::models::twisted_edwards::EdwardsCurve;
     /// use curvelib::traits::{Curve, ProjectivePoint};
-    /// use curvelib::traits::Field;
     /// use curvelib::algebra::fields::fp::Fp;
     ///
     /// let p = U1024::from_u64(17);
@@ -350,32 +371,33 @@ impl<'a> ProjectivePoint<'a> for TePoint<'a> {
         }
     }
 
-    /// Converts this projective/extended point to affine coordinates.
+    /// Convert this projective/extended point into affine (x, y) coordinates.
     ///
-    /// If the point is the projective identity (z == 0), this returns the affine identity `(0, 1)`.
+    /// Returns the affine coordinates corresponding to this point. If the point is the projective
+    /// identity (z == 0), this returns the affine identity `(0, 1)`.
     ///
     /// # Returns
     ///
-    /// A tuple `(x_aff, y_aff)` containing the affine x and y coordinates.
+    /// A tuple `(x_aff, y_aff)` containing the affine `x` and `y` coordinates.
     ///
     /// # Examples
     ///
     /// ```
-    /// use mathlib::{U1024, BigInt};
-    /// use mathlib::field::{montgomery::MontgomeryParams};
-    /// use curvelib::models::twisted_edwards::EdwardsCurve;
-    /// use curvelib::traits::{Curve, ProjectivePoint};
-    /// use curvelib::traits::Field;
-    /// use curvelib::algebra::fields::fp::Fp;
-    ///
+    /// // construct curve and get its identity, then convert to affine
+    /// # use mathlib::{U1024, BigInt};
+    /// # use mathlib::field::montgomery::MontgomeryParams;
+    /// # use curvelib::algebra::fields::fp::Fp;
+    /// # use curvelib::models::twisted_edwards::EdwardsCurve;
+    /// # use curvelib::traits::Curve;
     /// let p = U1024::from_u64(17);
     /// let params = MontgomeryParams::new(p, U1024::zero());
     /// let a = Fp::new(U1024::from_u64(1), &params);
     /// let d = Fp::new(U1024::from_u64(2), &params);
     /// let curve = EdwardsCurve::new(a, d, &params, &params, U1024::from_u64(0), U1024::from_u64(1));
-    ///
-    /// let p = curve.identity();
-    /// let (x, y) = p.to_affine();
+    /// let pt = curve.identity();
+    /// let (x, y) = pt.to_affine();
+    /// assert_eq!(x, Fp::zero(curve.params));
+    /// assert_eq!(y, Fp::one(curve.params));
     /// ```
     fn to_affine(&self) -> (Fp<'a>, Fp<'a>) {
         if self.z.value == U1024::zero() {
