@@ -11,8 +11,8 @@ use crate::{
 ///
 /// This returns the curve slope for the tangent case when `t == p` (λ = (3*x^2 + a) / (2*y)) or for
 /// the chord case when `t != p` (λ = (y2 - y1) / (x2 - x1)). If the denominator is zero (vertical
-/// tangent or vertical line), the function returns `Fp::zero(...)`.
-fn calculate_slope<'a>(t: &G1Affine<'a>, p: &G1Affine<'a>) -> Fp<'a> {
+/// tangent or vertical line), the function returns `None` to signal a vertical line.
+fn calculate_slope<'a>(t: &G1Affine<'a>, p: &G1Affine<'a>) -> Option<Fp<'a>> {
     let (x1, y1) = t.to_affine();
     let (x2, y2) = p.to_affine();
 
@@ -24,47 +24,39 @@ fn calculate_slope<'a>(t: &G1Affine<'a>, p: &G1Affine<'a>) -> Fp<'a> {
         let num = (x1 * x1 * three) + t.curve.a;
         let den = y1 * two;
 
-        // If y1 = 0 (vertical tangent) -> lambda infinite -> handle separately
+        // If y1 = 0 (vertical tangent) -> return None to signal vertical line
         if den == Fp::zero(t.curve.params) {
-            return Fp::zero(t.curve.params);
-        } // Simplify
+            return None;
+        }
 
-        num * den.inv().unwrap()
+        Some(num * den.inv().unwrap())
     } else {
         // Chord: lambda = (y2 - y1) / (x2 - x1)
         let num = y2 - y1;
         let den = x2 - x1;
 
+        // If x1 == x2 (vertical line) -> return None
         if den == Fp::zero(t.curve.params) {
-            return Fp::zero(t.curve.params);
-        } // Vertical line
+            return None;
+        }
 
-        num * den.inv().unwrap()
+        Some(num * den.inv().unwrap())
     }
 }
 
 /// Evaluate the line function l_{T,P} at a G2 point Q and embed the result into Fp6.
 ///
-/// Computes the value of the line defined by T and P (in G1) evaluated at Q (in G2):
-/// y_Q - y_T - lambda * (x_Q - x_T). Coordinates from Fp are lifted into Fp2 to match Q,
-/// and the resulting Fp2 value is placed in the c0 coefficient of the returned Fp6
-/// with c1 and c2 set to zero. If Q is projective (z ≠ 1) it is converted to affine first.
+/// Computes the value of the line defined by T and P (in G1) evaluated at Q (in G2).
+/// For a non-vertical line: y_Q - y_T - lambda * (x_Q - x_T).
+/// For a vertical line: x_Q - x_T.
+/// Coordinates from Fp are lifted into Fp2 to match Q, and the resulting Fp2 value
+/// is placed in the c0 coefficient of the returned Fp6 with c1 and c2 set to zero.
+/// If Q is projective (z ≠ 1) it is converted to affine first.
 fn evaluate_line<'a>(t: &G1Affine<'a>, p: &G1Affine<'a>, q: &G2Projective<'a>) -> Fp6<'a> {
-    // Line: y - y1 - lambda(x - x1) = 0
-    // => Val = y_Q - y_T - lambda * (x_Q - x_T)
-    // Note: T, P in G1 (Fp), Q in G2 (Fp2).
-    // Lambda in Fp.
-    // Result in Fp2 (since Q is Fp2), then embed into Fp6.
-
-    let lambda = calculate_slope(t, p); // Fp
-
     let (xt_aff, yt_aff) = t.to_affine();
     let xt = xt_aff;
     let yt = yt_aff;
 
-    // Q coordinates (Fp2)
-    // Assume G2Point stores Affine, or we convert here
-    // For simplicity given G2Point doesn't have affine cache, we use x, y directly assuming z=1 or projective calc
     // Convert Q to affine coordinates
     let (xq, yq) = if q.z == Fp2::one(t.curve.params) {
         (q.x, q.y)
@@ -77,23 +69,33 @@ fn evaluate_line<'a>(t: &G1Affine<'a>, p: &G1Affine<'a>, q: &G2Projective<'a>) -
         (q.x * z2, q.y * z3)
     };
 
-    // Calculate: (yq - yt) - lambda * (xq - xt)
-    // Need to lift yt, xt, lambda from Fp to Fp2 to compute with xq, yq
     let zero = FieldElement::zero(t.curve.params);
+    let z_fp2 = Fp2::new(Fp::from(zero), Fp::from(zero));
 
-    // Embed Fp -> Fp2 (imaginary part = 0)
-    let yt_fp2 = Fp2::new(yt, Fp::from(zero));
-    let xt_fp2 = Fp2::new(xt, Fp::from(zero));
-    let lambda_fp2 = Fp2::new(lambda, Fp::from(zero));
+    // Pattern-match on the slope to handle vertical vs. non-vertical lines
+    let lambda_opt = calculate_slope(t, p);
 
-    let term1 = yq - yt_fp2;
-    let term2 = lambda_fp2 * (xq - xt_fp2);
-    let res_fp2 = term1 - term2;
+    let res_fp2 = match lambda_opt {
+        Some(lambda) => {
+            // Non-vertical line: (yq - yt) - lambda * (xq - xt)
+            // Embed Fp -> Fp2 (imaginary part = 0)
+            let yt_fp2 = Fp2::new(yt, Fp::from(zero));
+            let xt_fp2 = Fp2::new(xt, Fp::from(zero));
+            let lambda_fp2 = Fp2::new(lambda, Fp::from(zero));
+
+            let term1 = yq - yt_fp2;
+            let term2 = lambda_fp2 * (xq - xt_fp2);
+            term1 - term2
+        }
+        None => {
+            // Vertical line: xq - xt
+            let xt_fp2 = Fp2::new(xt, Fp::from(zero));
+            xq - xt_fp2
+        }
+    };
 
     // Embed Fp2 -> Fp6
-    // Fp6 = c0 + c1 v + c2 v^2. Embed into c0 (or other pos depending on Twist).
-    // For standard Tate, this value is at c0.
-    let z_fp2 = Fp2::new(Fp::from(zero), Fp::from(zero));
+    // Fp6 = c0 + c1 v + c2 v^2. Embed into c0.
     Fp6::new(res_fp2, z_fp2, z_fp2)
 }
 

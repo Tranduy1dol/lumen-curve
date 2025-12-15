@@ -39,16 +39,20 @@ impl<'a> Curve<'a> for SexticTwist<'a> {
     /// assert!(inf.is_identity());
     /// ```
     fn identity(&self) -> Self::Point {
+        // Create base field elements for constructing Fp2 coordinates
         let zero_fp = FieldElement::zero(self.params);
         let one_fp = FieldElement::one(self.params);
 
+        // Build Fp2 elements: zero = (0, 0), one = (1, 0)
         let zero_fp2 = Fp2::new(Fp::from(zero_fp), Fp::from(zero_fp));
         let one_fp2 = Fp2::new(Fp::from(one_fp), Fp::from(zero_fp)); // 1 + 0u
 
+        // Point at infinity in Jacobian: any point with Z = 0
+        // We use (1, 1, 0) as a canonical representation
         STPoint {
             x: one_fp2,
             y: one_fp2,
-            z: zero_fp2,
+            z: zero_fp2, // Z = 0 signals point at infinity
             curve: self.clone(),
         }
     }
@@ -87,14 +91,14 @@ impl<'a> Curve<'a> for SexticTwist<'a> {
         x: &<Self::Point as ProjectivePoint<'a>>::Field,
         y: &<Self::Point as ProjectivePoint<'a>>::Field,
     ) -> bool {
-        // Check affine: Y^2 = X^3 + aX + b (calculated in Fp2)
-        let y2 = *y * *y;
-        let x2 = *x * *x;
-        let x3 = x2 * *x;
-        let ax = self.a * *x;
+        // Check affine curve equation: Y^2 = X^3 + aX + b (all operations in Fp2)
+        let y2 = *y * *y; // Y^2
+        let x2 = *x * *x; // X^2
+        let x3 = x2 * *x; // X^3
+        let ax = self.a * *x; // aX
 
-        let rhs = x3 + ax + self.b;
-        y2 == rhs
+        let rhs = x3 + ax + self.b; // X^3 + aX + b
+        y2 == rhs // Compare LHS and RHS
     }
 
     /// Access the curve's Montgomery scalar parameters.
@@ -162,13 +166,17 @@ impl<'a> Curve<'a> for SexticTwist<'a> {
     fn generator(&self) -> Self::Point {
         let x = self.generator_x;
         let y = self.generator_y;
+        // Note: unused variables kept for clarity/future use
         let _zero_fp = FieldElement::zero(self.params);
         let _zero_fp2 = Fp2::new(Fp::zero(self.params), Fp::zero(self.params));
+
+        // Z = (1, 0) in Fp2 represents affine coordinates (Z = 1)
         let z = Fp2::new(
             Fp::from(FieldElement::one(self.params)),
             Fp::from(FieldElement::zero(self.params)),
         );
 
+        // Return generator in Jacobian form with Z = 1
         STPoint {
             x,
             y,
@@ -279,11 +287,13 @@ impl<'a> STPoint<'a> {
     ///
     /// A new `STPoint` representing the additive inverse of `self`.
     pub fn neg(&self) -> Self {
+        // Identity is its own negation
         if self.is_identity() {
             return self.clone();
         }
-        // -P = (X, -Y, Z)
-        let neg_y = -self.y; // Fp2 implements Neg
+        // Negate a point in Jacobian: -P = (X, -Y, Z)
+        // Only the Y coordinate changes sign
+        let neg_y = -self.y; // Fp2 implements Neg trait
         Self {
             x: self.x,
             y: neg_y,
@@ -324,7 +334,8 @@ impl<'a> ProjectivePoint<'a> for STPoint<'a> {
     /// assert!(inf.is_identity());
     /// ```
     fn is_identity(&self) -> bool {
-        // Z == 0 in Fp2
+        // A point is at infinity iff Z = 0 in Fp2
+        // Check both components of Z are zero
         self.z.c0.value == mathlib::U1024::zero() && self.z.c1.value == mathlib::U1024::zero()
     }
 
@@ -337,6 +348,7 @@ impl<'a> ProjectivePoint<'a> for STPoint<'a> {
     /// # Returns
     /// The curve point representing `self + rhs` in Jacobian coordinates.
     fn add(&self, rhs: &Self) -> Self {
+        // Handle identity cases
         if self.is_identity() {
             return rhs.clone();
         }
@@ -344,36 +356,46 @@ impl<'a> ProjectivePoint<'a> for STPoint<'a> {
             return self.clone();
         }
 
-        let z1z1 = self.z.square();
-        let z2z2 = rhs.z.square();
+        // Standard Jacobian addition formulas for elliptic curves
+        // See "Guide to Elliptic Curve Cryptography" Algorithm 3.22
+        let z1z1 = self.z.square(); // Z1^2
+        let z2z2 = rhs.z.square(); // Z2^2
 
-        let u1 = self.x * z2z2;
-        let u2 = rhs.x * z1z1;
+        let u1 = self.x * z2z2; // U1 = X1 * Z2^2
+        let u2 = rhs.x * z1z1; // U2 = X2 * Z1^2
 
-        let s1 = self.y * (rhs.z * z2z2); // Y1 * Z2^3
-        let s2 = rhs.y * (self.z * z1z1); // Y2 * Z1^3
+        let s1 = self.y * (rhs.z * z2z2); // S1 = Y1 * Z2^3
+        let s2 = rhs.y * (self.z * z1z1); // S2 = Y2 * Z1^3
 
+        // Check if points have same X coordinate (in affine)
         if u1 == u2 {
             return if s1 == s2 {
+                // Same point: use doubling formula
                 self.double()
             } else {
+                // Inverse points: return identity
                 self.curve.identity()
             };
         }
 
-        let h = u2 - u1;
-        let r = s2 - s1;
-        let hh = h.square();
-        let hhh = hh * h;
-        let v = u1 * hh;
+        // Compute new coordinates
+        let h = u2 - u1; // H = U2 - U1
+        let r = s2 - s1; // R = S2 - S1
+        let hh = h.square(); // HH = H^2
+        let hhh = hh * h; // HHH = H^3
+        let v = u1 * hh; // V = U1 * HH
 
+        // Create constant 2 in Fp2
         let two_val = mathlib::U1024::from_u64(2);
         let zero_fp = FieldElement::zero(self.curve.params);
         let two_fp = FieldElement::new(two_val, self.curve.params);
         let two_fp2 = Fp2::new(Fp::from(two_fp), Fp::from(zero_fp));
 
+        // X3 = R^2 - HHH - 2V
         let x3 = r.square() - hhh - (two_fp2 * v);
+        // Y3 = R(V - X3) - S1 * HHH
         let y3 = (r * (v - x3)) - (s1 * hhh);
+        // Z3 = Z1 * Z2 * H
         let z3 = self.z * rhs.z * h;
 
         Self {
@@ -400,38 +422,39 @@ impl<'a> ProjectivePoint<'a> for STPoint<'a> {
     /// // assert_eq!(r, p.add(&p));
     /// ```
     fn double(&self) -> Self {
+        // Identity doubled is still identity
         if self.is_identity() {
             return self.clone();
         }
 
-        // Jacobian doubling formulas (same as SWPoint but on Fp2)
-        let xx = self.x.square();
-        let yy = self.y.square();
-        let yyyy = yy.square();
-        let zz = self.z.square();
+        // Jacobian point doubling formulas (adapted for Fp2 operations)
+        // See "Explicit-Formulas Database" - dbl-2007-bl for similar formulas
+        let xx = self.x.square(); // XX = X^2
+        let yy = self.y.square(); // YY = Y^2
+        let yyyy = yy.square(); // YYYY = YY^2
+        let zz = self.z.square(); // ZZ = Z^2
 
-        // 2
+        // Construct small integer constants in Fp2
         let zero_fp = FieldElement::zero(self.curve.params);
         let two_val = mathlib::U1024::from_u64(2);
         let two_fp = FieldElement::new(two_val, self.curve.params);
         let two_fp2 = Fp2::new(Fp::from(two_fp), Fp::from(zero_fp));
 
-        // S = 2 * ((X * YY) * 2) = 4XY^2
+        // S = 4XY^2 = 2 * ((X * YY) * 2)
         let s = two_fp2 * ((self.x * yy) * two_fp2);
 
-        // M = 3*X^2 + a*Z^4
+        // M = 3X^2 + aZ^4 (slope of tangent line)
         let three_val = mathlib::U1024::from_u64(3);
         let three_fp = FieldElement::new(three_val, self.curve.params);
         let three_fp2 = Fp2::new(Fp::from(three_fp), Fp::from(zero_fp));
 
-        let zzzz = zz.square();
+        let zzzz = zz.square(); // Z^4
         let m = (three_fp2 * xx) + (self.curve.a * zzzz);
 
         // X' = M^2 - 2S
         let x_new = m.square() - (s * two_fp2);
 
-        // Z' = (Y + Z)^2 - YY - ZZ = 2YZ
-        // Or Z' = 2 * Y * Z
+        // Z' = 2YZ (alternative: (Y+Z)^2 - YY - ZZ)
         let z_new = (self.y * self.z) * two_fp2;
 
         // Y' = M(S - X') - 8YYYY
@@ -483,18 +506,20 @@ impl<'a> ProjectivePoint<'a> for STPoint<'a> {
     /// assert_eq!(y_aff, Fp2::new(zero, zero));
     /// ```
     fn to_affine(&self) -> (Self::Field, Self::Field) {
+        // Point at infinity maps to (0, 0) in affine
         if self.is_identity() {
             let zero = FieldElement::zero(self.curve.params);
             let zero_fp2 = Fp2::new(Fp::from(zero), Fp::from(zero));
             return (zero_fp2, zero_fp2);
         }
 
-        let z_inv = self.z.inv().unwrap(); // Fp2 invert
-        let z2_inv = z_inv.square();
-        let z3_inv = z2_inv * z_inv;
+        // Convert Jacobian (X:Y:Z) to affine (x, y) where x = X/Z^2, y = Y/Z^3
+        let z_inv = self.z.inv().unwrap(); // Compute Z^(-1) in Fp2
+        let z2_inv = z_inv.square(); // Z^(-2)
+        let z3_inv = z2_inv * z_inv; // Z^(-3)
 
-        let x_aff = self.x * z2_inv;
-        let y_aff = self.y * z3_inv;
+        let x_aff = self.x * z2_inv; // x = X * Z^(-2)
+        let y_aff = self.y * z3_inv; // y = Y * Z^(-3)
         (x_aff, y_aff)
     }
 
@@ -534,12 +559,17 @@ impl<'a> ProjectivePoint<'a> for STPoint<'a> {
     /// assert_eq!(r, p.add(&p).add(&p));
     /// ```
     fn mul(&self, scalar: &mathlib::U1024) -> Self {
+        // Double-and-add scalar multiplication algorithm
+        // Start with identity (0 * P = O)
         let mut res = self.curve.identity();
         let num_bits = scalar.bits();
+
+        // Process bits from most significant to least significant
         for i in (0..num_bits).rev() {
-            res = res.double();
+            res = res.double(); // Double accumulated result
             if scalar.bit(i) {
-                res = res.add(self);
+                // If current bit is set
+                res = res.add(self); // Add P to accumulator
             }
         }
         res

@@ -16,8 +16,9 @@ impl<'a> Mul for Fp6<'a> {
     /// Multiply two Fp6 field elements.
     ///
     /// The product is computed in the cubic extension Fp6 = Fp2[v]/(v^3 - ξ) using the
-    /// relation v^3 = ξ, v^4 = ξ v, v^5 = ξ v^2. This implementation assumes the
-    /// cubic non-residue `ξ` equals `1`.
+    /// relation v^3 = ξ, v^4 = ξ v, v^5 = ξ v^2. This implementation uses the
+    /// cubic non-residue ξ = (0, 1) in Fp2 (i.e., Fp2::new(0, 1)), which is hard-coded
+    /// rather than generic over an arbitrary ξ.
     ///
     /// # Returns
     ///
@@ -40,10 +41,10 @@ impl<'a> Mul for Fp6<'a> {
         // Cubic extension field multiplication: (a + bv + cv²)(d + ev + fv²)
         // Using Karatsuba-like optimization for 6 -> 5 multiplications
         // Result = (ad) + (ae+bd)v + (af+be+cd)v² + (bf+ce)v³ + (cf)v⁴
-        // With v³ = ξ (non-residue), we need: v³ = ξ, v⁴ = ξv, v⁵ = ξv²
+        // With v³ = ξ where ξ = (0,1) in Fp2, we get: v³ = ξ, v⁴ = ξv, v⁵ = ξv²
 
-        // Generic implementation assuming ξ = 1 (identity for the non-residue)
-        // For specific curves, this would need to be parameterized
+        // This implementation uses ξ = (0,1) (i.e., Fp2::new(0, 1)).
+        // Note: ξ is hard-coded here rather than being generic/parameterized.
 
         let a = self.c0;
         let b = self.c1;
@@ -52,9 +53,9 @@ impl<'a> Mul for Fp6<'a> {
         let e = rhs.c1;
         let f = rhs.c2;
 
-        // Schoolbook multiplication approach - simpler and generic
+        // Schoolbook multiplication approach
         // (a + bv + cv²)(d + ev + fv²) = ad + (ae+bd)v + (af+be+cd)v² + (bf+ce)v³ + (cf)v⁴
-        // Assuming v³ = ξ = 1: v³ -> 1, v⁴ -> v, v⁵ -> v²
+        // With v³ = ξ = (0,1) in Fp2: terms with v³, v⁴, v⁵ are reduced modulo v³ - ξ
 
         let params = self.c0.c0.params;
         let zero = Fp::zero(params);
