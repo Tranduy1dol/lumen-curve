@@ -14,7 +14,7 @@ use std::ops::Neg;
 
 use mathlib::{FieldConfig, FieldElement, U1024};
 
-use crate::traits::{Curve, TwistedEdwardsConfig};
+use crate::traits::{Curve, Field, TwistedEdwardsConfig};
 
 /// A point on a Twisted Edwards curve in affine coordinates (x, y).
 ///
@@ -168,7 +168,7 @@ impl<P: TwistedEdwardsConfig> Projective<P> {
         if self.z.is_zero() {
             return Affine::identity();
         }
-        let z_inv = self.z.inv();
+        let z_inv = Field::inv(&self.z).unwrap();
         Affine::new(self.x * z_inv, self.y * z_inv)
     }
 
@@ -468,7 +468,7 @@ impl<C: FieldConfig> crate::traits::ProjectivePoint for EdwardsPoint<C> {
         if self.z.is_zero() {
             return (FieldElement::<C>::zero(), FieldElement::<C>::one());
         }
-        let z_inv = self.z.inv();
+        let z_inv = Field::inv(&self.z).unwrap();
         (self.x * z_inv, self.y * z_inv)
     }
 

@@ -14,7 +14,7 @@ use std::ops::Neg;
 
 use mathlib::{FieldConfig, FieldElement, U1024};
 
-use crate::traits::{Curve, ShortWeierstrassConfig};
+use crate::traits::{Curve, Field, ShortWeierstrassConfig};
 
 /// A point on a Short Weierstrass curve in affine coordinates (x, y).
 ///
@@ -190,7 +190,7 @@ impl<P: ShortWeierstrassConfig> Projective<P> {
         if self.is_identity() {
             Affine::identity()
         } else {
-            let z_inv = self.z.inv();
+            let z_inv = Field::inv(&self.z).unwrap();
             Affine::new(self.x * z_inv, self.y * z_inv)
         }
     }
@@ -569,7 +569,7 @@ impl<C: FieldConfig> crate::traits::ProjectivePoint for WeierstrassPoint<C> {
         if self.is_identity() {
             return (FieldElement::<C>::zero(), FieldElement::<C>::zero());
         }
-        let z_inv = self.z.inv();
+        let z_inv = Field::inv(&self.z).unwrap();
         (self.x * z_inv, self.y * z_inv)
     }
 
