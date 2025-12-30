@@ -1,11 +1,11 @@
 [package]
-name = "curvelib"
+name = "lumen-curve"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 hex = "0.4.3"
-mathlib = { git = "https://github.com/Tranduy1dol/mathlib", version = "1.1.0"}
+lumen-math = { git = "https://github.com/Tranduy1dol/lumen-math", version = "1.2.0"}
 rand = "0.9.2"
 
 [features]

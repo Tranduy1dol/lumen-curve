@@ -1,8 +1,10 @@
-# curvelib
+# lumen-curve
 
-[![CI](https://github.com/Tranduy1dol/curvelib/actions/workflows/ci.yml/badge.svg)](https://github.com/Tranduy1dol/curvelib/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/Tranduy1dol/curvelib/graph/badge.svg?token=ZgGkQ787W4)](https://codecov.io/gh/Tranduy1dol/curvelib)
+[![CI](https://github.com/Tranduy1dol/lumen-curve/actions/workflows/ci.yml/badge.svg)](https://github.com/Tranduy1dol/lumen-curve/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Tranduy1dol/lumen-curve/graph/badge.svg)](https://codecov.io/gh/Tranduy1dol/lumen-curve)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+> ✨ Part of the [luminescent](https://github.com/Tranduy1dol/luminescent) project — *Illuminating the path to zero-knowledge*
 
 A Rust library for elliptic curve cryptography, supporting various curve models and cryptographic primitives.
 
@@ -33,9 +35,9 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-curvelib = { git = "https://github.com/Tranduy1dol/curvelib" }
-# Ensure mathlib is also available
-mathlib = { git = "https://github.com/Tranduy1dol/mathlib" }
+lumen-curve = { git = "https://github.com/Tranduy1dol/lumen-curve" }
+# Ensure lumen-math is also available
+lumen-math = { git = "https://github.com/Tranduy1dol/lumen-math" }
 ```
 
 ## Usage
@@ -43,14 +45,14 @@ mathlib = { git = "https://github.com/Tranduy1dol/mathlib" }
 ### Key Generation and Signing
 
 ```rust
-use curvelib::{
+use lumen_curve::{
     instances::tiny_jubjub::{TinyJubjubConfig, TinyJubjubScalarField},
     protocol::{
         keys::{KeyEngine, PrivateKey, ToHex},
         signing::SigningEngine,
     },
 };
-use mathlib::{BigInt, FieldElement, U1024};
+use lumen_math::{BigInt, FieldElement, U1024};
 
 fn example() {
     let key_engine = KeyEngine::<TinyJubjubConfig>::new();
