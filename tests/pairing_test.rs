@@ -1,11 +1,11 @@
 //! Tests for pairing operations.
 
-use curvelib::{
+use lumen_curve::{
     instances::bls6_6::{self, FINAL_EXPONENT},
     protocol::pairing::tate_pairing,
     traits::{Curve, ProjectivePoint},
 };
-use mathlib::U1024;
+use lumen_math::U1024;
 
 #[test]
 fn test_bls6_6_bilinearity() {

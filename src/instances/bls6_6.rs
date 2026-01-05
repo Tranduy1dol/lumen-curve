@@ -7,27 +7,27 @@
 //!
 //! # Example
 //! ```rust,ignore
-//! use curvelib::instances::bls6_6::{Bls6_6G1Config, get_g1_curve};
-//! use curvelib::traits::ShortWeierstrassConfig;
+//! use lumen_curve::instances::bls6_6::{Bls6_6G1Config, get_g1_curve};
+//! use lumen_curve::traits::ShortWeierstrassConfig;
 //!
 //! // Access curve parameters via the config trait
 //! let a = Bls6_6G1Config::coeff_a();
 //! let b = Bls6_6G1Config::coeff_b();
 //! ```
 
-use mathlib::{FieldElement, fp};
+use lumen_math::{FieldConfig, FieldElement, fp};
 
 use crate::algebra::fields::Fp2;
 use crate::models::{SexticTwist, TwistPoint, WeierstrassCurve, WeierstrassPoint};
 use crate::traits::{Curve, CurveConfig, ShortWeierstrassConfig};
 
 /// Base field configuration for BLS6_6 (modulus p = 43)
-#[derive(mathlib::FieldConfig, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(FieldConfig, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[modulus = "0x2B"] // 43 in decimal
 pub struct Bls6_6BaseField;
 
 /// Scalar field configuration for BLS6_6 (group order r = 13)
-#[derive(mathlib::FieldConfig, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(FieldConfig, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[modulus = "0x0D"] // 13 in decimal
 pub struct Bls6_6ScalarField;
 
@@ -41,8 +41,8 @@ pub type G2Point = TwistPoint<Bls6_6BaseField>;
 
 /// G1 curve configuration for BLS6_6.
 ///
-/// This implements the arkworks-style `CurveConfig` pattern where curve
-/// parameters are defined at the type level.
+/// Implements the `CurveConfig` trait with curve parameters defined at the
+/// type level for compile-time curve selection.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Bls6_6G1Config;
 

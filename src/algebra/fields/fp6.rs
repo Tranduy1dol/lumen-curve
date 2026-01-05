@@ -5,7 +5,7 @@
 
 use std::ops::{Add, Mul, Neg, Sub};
 
-use mathlib::FieldConfig;
+use lumen_math::FieldConfig;
 
 use crate::algebra::fields::Fp2;
 use crate::traits::Field;

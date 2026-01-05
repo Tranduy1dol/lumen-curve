@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 
-use mathlib::U1024;
+use lumen_math::U1024;
 
 use crate::traits::point::ProjectivePoint;
 

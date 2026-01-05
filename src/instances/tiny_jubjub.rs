@@ -15,18 +15,18 @@
 //! let d = TinyJubjubConfig::coeff_d();
 //! ```
 
-use mathlib::{FieldElement, fp};
+use lumen_math::{FieldConfig, FieldElement, fp};
 
 use crate::models::EdwardsCurve;
 use crate::traits::{CurveConfig, TwistedEdwardsConfig};
 
 /// Base field configuration for Tiny Jubjub (modulus p = 13)
-#[derive(mathlib::FieldConfig, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(FieldConfig, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[modulus = "0x0D"] // 13 in decimal
 pub struct TinyJubjubBaseField;
 
 /// Scalar field configuration for Tiny Jubjub (group order r = 5)
-#[derive(mathlib::FieldConfig, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(FieldConfig, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[modulus = "0x05"] // 5 in decimal
 pub struct TinyJubjubScalarField;
 
@@ -36,8 +36,8 @@ pub type Fr5 = FieldElement<TinyJubjubScalarField>;
 
 /// Curve configuration for Tiny Jubjub.
 ///
-/// This implements the arkworks-style `CurveConfig` pattern where curve
-/// parameters are defined at the type level.
+/// Implements the `CurveConfig` trait with curve parameters defined at the
+/// type level for compile-time curve selection.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct TinyJubjubConfig;
 

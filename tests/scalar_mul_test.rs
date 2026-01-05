@@ -1,11 +1,11 @@
 //! Tests for scalar multiplication.
 
-use curvelib::{
+use lumen_curve::{
     instances::tiny_jubjub::{self, TinyJubjubBaseField},
     models::EdwardsPoint,
     traits::{Curve, ProjectivePoint},
 };
-use mathlib::{BigInt, FieldElement, U1024, fp};
+use lumen_math::{BigInt, FieldElement, U1024, fp};
 
 #[test]
 fn test_scalar_multiplication() {

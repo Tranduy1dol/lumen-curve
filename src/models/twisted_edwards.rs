@@ -5,14 +5,14 @@
 //!
 //! # Design
 //!
-//! Following the arkworks pattern, curve parameters are defined at the type level
-//! via `TwistedEdwardsConfig`. Points are generic over the config type, not
-//! over runtime curve instances.
+//! Curve parameters are defined at the type level via `TwistedEdwardsConfig`.
+//! Points are generic over the config type, enabling compile-time curve selection
+//! without runtime overhead.
 
 use std::marker::PhantomData;
 use std::ops::Neg;
 
-use mathlib::{FieldConfig, FieldElement, U1024};
+use lumen_math::{FieldConfig, FieldElement, U1024};
 
 use crate::traits::{Curve, Field, TwistedEdwardsConfig};
 

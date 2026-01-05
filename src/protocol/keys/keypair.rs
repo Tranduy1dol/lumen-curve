@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use mathlib::{FieldElement, U1024};
+use lumen_math::{FieldElement, U1024};
 
 use crate::traits::{CurveConfig, ProjectivePoint};
 

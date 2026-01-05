@@ -3,7 +3,7 @@
 //! This module provides the Miller loop algorithm for computing
 //! pairings on BLS-style curves.
 
-use mathlib::{FieldConfig, FieldElement, U1024};
+use lumen_math::{FieldConfig, FieldElement, U1024};
 
 use crate::algebra::fields::{Fp2, Fp6};
 use crate::models::{TwistPoint, WeierstrassPoint};

@@ -6,12 +6,13 @@
 use std::marker::PhantomData;
 use std::ops::Neg;
 
-use mathlib::{FieldConfig, FieldElement, Polynomial, U1024};
+use lumen_math::{FieldConfig, FieldElement, Polynomial, U1024};
 
-use crate::models::{SexticTwist, TwistPoint, WeierstrassCurve, WeierstrassPoint};
-use crate::protocol::commitment::PolynomialCommitment;
-use crate::protocol::pairing::tate_pairing;
-use crate::traits::{Curve, ProjectivePoint};
+use crate::{
+    models::{SexticTwist, TwistPoint, WeierstrassCurve, WeierstrassPoint},
+    protocol::{commitment::PolynomialCommitment, pairing::tate_pairing},
+    traits::{Curve, ProjectivePoint},
+};
 
 /// Type aliases for curve points.
 pub type G1Point<C> = WeierstrassPoint<C>;
@@ -177,9 +178,10 @@ impl<C: FieldConfig> PolynomialCommitment<C> for Kzg<C> {
 
 #[cfg(test)]
 mod tests {
+    use lumen_math::U1024;
+
     use super::*;
     use crate::instances::bls6_6::{Bls6_6BaseField, FINAL_EXPONENT, get_g1_curve, get_g2_curve};
-    use mathlib::U1024;
 
     #[test]
     fn test_kzg_setup() {

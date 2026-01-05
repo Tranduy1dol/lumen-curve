@@ -1,6 +1,6 @@
 //! ECDSA signature type.
 
-use mathlib::U1024;
+use lumen_math::U1024;
 
 /// An ECDSA signature with (r, s) components.
 #[derive(Clone, Debug, PartialEq, Eq)]

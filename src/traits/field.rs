@@ -1,6 +1,6 @@
 //! Field trait for finite field arithmetic.
 
-use mathlib::FieldConfig;
+use lumen_math::{FieldConfig, FieldElement};
 
 /// Trait for finite field elements.
 ///
@@ -33,29 +33,29 @@ pub trait Field: Sized + Clone + Copy + PartialEq + Eq {
 }
 
 /// Implement Field for mathlib's `FieldElement<C>`
-impl<C: FieldConfig> Field for mathlib::FieldElement<C> {
+impl<C: FieldConfig> Field for FieldElement<C> {
     fn zero() -> Self {
-        mathlib::FieldElement::<C>::zero()
+        FieldElement::<C>::zero()
     }
 
     fn is_zero(&self) -> bool {
-        mathlib::FieldElement::is_zero(self)
+        FieldElement::is_zero(self)
     }
 
     fn one() -> Self {
-        mathlib::FieldElement::<C>::one()
+        FieldElement::<C>::one()
     }
 
     fn inv(&self) -> Option<Self> {
         if self.is_zero() {
             None
         } else {
-            Some(mathlib::FieldElement::inv(self))
+            Some(FieldElement::inv(self))
         }
     }
 
     fn double(&self) -> Self {
-        mathlib::FieldElement::double(self)
+        FieldElement::double(self)
     }
 
     fn mul(&self, rhs: &Self) -> Self {
@@ -67,6 +67,6 @@ impl<C: FieldConfig> Field for mathlib::FieldElement<C> {
     }
 
     fn square(&self) -> Self {
-        mathlib::FieldElement::square(self)
+        FieldElement::square(self)
     }
 }

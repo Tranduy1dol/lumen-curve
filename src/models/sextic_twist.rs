@@ -6,7 +6,7 @@
 use std::marker::PhantomData;
 use std::ops::Neg;
 
-use mathlib::{FieldConfig, FieldElement, U1024};
+use lumen_math::{FieldConfig, FieldElement, U1024};
 
 use crate::algebra::fields::Fp2;
 use crate::traits::{Curve, ProjectivePoint};

@@ -4,7 +4,7 @@
 
 use std::ops::{Add, Mul, Neg, Sub};
 
-use mathlib::{FieldConfig, FieldElement};
+use lumen_math::{FieldConfig, FieldElement};
 
 use crate::traits::Field;
 

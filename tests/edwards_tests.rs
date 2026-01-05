@@ -1,12 +1,12 @@
 //! Tests for Edwards curve operations.
 
-use curvelib::{
+use lumen_curve::{
     instances::bls6_6::Bls6_6BaseField,
     instances::tiny_jubjub::{self, TinyJubjubBaseField},
     models::{EdwardsPoint, WeierstrassCurve},
     traits::{Curve, ProjectivePoint},
 };
-use mathlib::{FieldElement, fp};
+use lumen_math::{FieldElement, fp};
 
 #[test]
 fn test_tiny_jubjub_addition() {

@@ -5,7 +5,7 @@
 pub mod final_exp;
 pub mod miller;
 
-use mathlib::{FieldConfig, U1024};
+use lumen_math::{FieldConfig, U1024};
 
 use crate::algebra::fields::Fp6;
 use crate::models::{TwistPoint, WeierstrassPoint};

@@ -4,7 +4,7 @@
 //! as part of the Phase 2 refactoring. They will be reimplemented as part
 //! of a `SigningEngine` module.
 
-use curvelib::{
+use lumen_curve::{
     instances::tiny_jubjub::{self, TinyJubjubConfig, TinyJubjubScalarField},
     protocol::{
         keys::{FromHex, KeyEngine, PrivateKey, ToHex},
@@ -12,7 +12,7 @@ use curvelib::{
     },
     traits::{Curve, ProjectivePoint},
 };
-use mathlib::{BigInt, FieldElement, U1024};
+use lumen_math::{BigInt, FieldElement, U1024};
 
 #[test]
 fn test_keypair_generation() {

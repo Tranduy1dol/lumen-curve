@@ -4,20 +4,20 @@
 //! used in curve arithmetic. Field elements are generic over a `FieldConfig`
 //! type rather than using lifetime parameters.
 
-use mathlib::{FieldConfig, FieldElement, U1024};
+use lumen_math::{FieldConfig, FieldElement, U1024};
 
 use crate::traits::ToU1024;
 
 /// Type alias for prime field elements.
 ///
-/// `Fp<C>` is an alias for `FieldElement<C>` from mathlib, providing convenient
+/// `Fp<C>` is an alias for `FieldElement<C>` from lumen-math, providing convenient
 /// shorthand for working with elements in the prime field defined by `C: FieldConfig`.
 ///
 /// # Example
 ///
 /// ```rust,ignore
-/// use curvelib::algebra::fields::Fp;
-/// use curvelib::instances::bls6_6::Bls6_6BaseField;
+/// use lumen_curve::algebra::fields::Fp;
+/// use lumen_curve::instances::bls6_6::Bls6_6BaseField;
 ///
 /// let a: Fp<Bls6_6BaseField> = Fp::new(U1024::from_u64(5));
 /// let b: Fp<Bls6_6BaseField> = Fp::one();

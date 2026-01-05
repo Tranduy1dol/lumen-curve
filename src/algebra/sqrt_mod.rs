@@ -3,7 +3,7 @@
 //! This module provides the `sqrt_mod` function for computing square roots
 //! in prime fields.
 
-use mathlib::{BigInt, FieldConfig, FieldElement, U1024};
+use lumen_math::{BigInt, FieldConfig, FieldElement, U1024};
 
 /// Compute a modular square root of `n` in its prime field using the Tonelli–Shanks algorithm.
 ///
@@ -118,9 +118,10 @@ pub fn sqrt_mod<C: FieldConfig>(n: &FieldElement<C>) -> Option<FieldElement<C>> 
 
 #[cfg(test)]
 mod tests {
+    use lumen_math::fp;
+
     use super::*;
     use crate::instances::bls6_6::Bls6_6BaseField;
-    use mathlib::fp;
 
     #[test]
     fn test_sqrt_of_zero() {

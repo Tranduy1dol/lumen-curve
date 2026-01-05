@@ -9,10 +9,12 @@ mod signature;
 pub use error::SignatureError;
 pub use signature::Signature;
 
-use mathlib::FieldElement;
+use lumen_math::FieldElement;
 
-use crate::protocol::keys::{PrivateKey, PublicKey};
-use crate::traits::{CurveConfig, ProjectivePoint};
+use crate::{
+    protocol::keys::{PrivateKey, PublicKey},
+    traits::{CurveConfig, ProjectivePoint},
+};
 
 /// Signing engine for ECDSA operations.
 ///
@@ -165,11 +167,13 @@ impl<C: CurveConfig> Default for SigningEngine<C> {
 
 #[cfg(test)]
 mod tests {
+    use lumen_math::U1024;
+
     use super::*;
-    use crate::instances::bls6_6::Bls6_6G1Config;
-    use crate::instances::bls6_6::Bls6_6ScalarField;
-    use crate::protocol::keys::KeyEngine;
-    use mathlib::U1024;
+    use crate::{
+        instances::bls6_6::{Bls6_6G1Config, Bls6_6ScalarField},
+        protocol::keys::KeyEngine,
+    };
 
     #[test]
     fn test_sign() {

@@ -1,9 +1,9 @@
 //! Hex encoding/decoding for keys.
 
-use crate::traits::{CurveConfig, ProjectivePoint};
-use mathlib::FieldConfig;
+use lumen_math::{FieldConfig, U1024};
 
 use super::keypair::{PrivateKey, PublicKey};
+use crate::traits::{CurveConfig, ProjectivePoint};
 
 /// Error type for hex parsing.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -124,7 +124,7 @@ fn compute_field_byte_length<C: CurveConfig>() -> usize {
 }
 
 /// Format U1024 as hex with fixed width (zero-padded to exactly byte_len * 2 hex chars).
-fn format_u1024_fixed_width(val: &mathlib::U1024, byte_len: usize) -> String {
+fn format_u1024_fixed_width(val: &U1024, byte_len: usize) -> String {
     let mut bytes = Vec::with_capacity(byte_len);
 
     // Limbs are little-endian: val.0[0] is the least significant 64 bits
@@ -147,7 +147,6 @@ fn format_u1024_fixed_width(val: &mathlib::U1024, byte_len: usize) -> String {
 mod tests {
     use super::*;
     use crate::instances::bls6_6::Bls6_6G1Config;
-    use mathlib::U1024;
 
     #[test]
     fn test_private_key_hex_roundtrip() {

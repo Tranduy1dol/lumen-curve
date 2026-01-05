@@ -9,7 +9,7 @@ mod keypair;
 pub use hex::{FromHex, HexError, ToHex};
 pub use keypair::{KeyPair, PrivateKey, PublicKey};
 
-use mathlib::U1024;
+use lumen_math::U1024;
 
 use crate::traits::{CurveConfig, ProjectivePoint};
 

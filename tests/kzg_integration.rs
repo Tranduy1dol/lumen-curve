@@ -2,12 +2,12 @@
 //!
 //! Tests the trait-based KZG implementation with mathlib 1.1.0.
 
-use curvelib::{
+use lumen_curve::{
     instances::bls6_6::{self, Bls6_6BaseField, FINAL_EXPONENT},
     protocol::{PolynomialCommitment, commitment::kzg::Kzg},
     traits::{Curve, ProjectivePoint},
 };
-use mathlib::{FieldElement, Polynomial, U1024, fp};
+use lumen_math::{FieldElement, Polynomial, U1024, fp};
 
 #[test]
 fn test_kzg_setup_trait() {

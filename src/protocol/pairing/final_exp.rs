@@ -2,7 +2,7 @@
 //!
 //! This module provides the final exponentiation step of the Tate pairing.
 
-use mathlib::{FieldConfig, U1024};
+use lumen_math::{FieldConfig, U1024};
 
 use crate::algebra::fields::Fp6;
 
@@ -40,9 +40,10 @@ pub fn final_exponentiation<C: FieldConfig>(f: &Fp6<C>, exponent: &U1024) -> Fp6
 
 #[cfg(test)]
 mod tests {
+    use lumen_math::u1024;
+
     use super::*;
     use crate::instances::bls6_6::Bls6_6BaseField;
-    use mathlib::u1024;
 
     #[test]
     fn test_final_exp_one() {

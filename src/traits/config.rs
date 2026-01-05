@@ -6,14 +6,14 @@
 //!
 //! # Design Note
 //!
-//! With mathlib 1.0.0, field elements use type-level configuration via
-//! `FieldConfig`, enabling const construction and clean generic code.
+//! With lumen-math 1.0.0, field elements use type-level configuration via
+//! `FieldConfig`, enabling const construction and cleaning generic code.
 //!
 //! # Example
 //!
 //! ```rust,ignore
-//! use curvelib::traits::{CurveConfig, ShortWeierstrassConfig};
-//! use curvelib::instances::bls6_6::Bls6_6G1Config;
+//! use lumen_curve::traits::{CurveConfig, ShortWeierstrassConfig};
+//! use lumen_curve::instances::bls6_6::Bls6_6G1Config;
 //!
 //! // Access curve parameters via the config traits
 //! let a = Bls6_6G1Config::coeff_a();
@@ -27,15 +27,15 @@
 
 use std::fmt::Debug;
 
-use mathlib::{BigInt, FieldConfig, FieldElement, U1024};
+use lumen_math::{BigInt, FieldConfig, FieldElement, U1024};
 
 use crate::traits::point::ProjectivePoint;
 
 /// Configuration trait for elliptic curves.
 ///
 /// This trait bundles together the associated types and static parameters
-/// that define a specific curve instance. Following the arkworks pattern,
-/// curves are treated as algebraic groups rather than runtime objects.
+/// that define a specific curve instance. Curves are treated as algebraic
+/// groups with compile-time parameters rather than runtime objects.
 ///
 /// # Associated Types
 ///

@@ -5,7 +5,7 @@
 
 pub mod kzg;
 
-use mathlib::{FieldConfig, FieldElement, Polynomial};
+use lumen_math::{FieldConfig, FieldElement, Polynomial};
 
 /// Core trait for polynomial commitment schemes.
 ///
