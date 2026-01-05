@@ -89,6 +89,17 @@ The library is organized into the following modules:
 - **`protocol`**: High-level cryptographic protocols built on top of the curves.
 - **`traits`**: Core traits defining the interfaces for curves, fields, and groups.
 
+## Documentation
+
+- **[THEORY.md](THEORY.md)** — Mathematical foundations covering:
+  - Finite fields and field extensions
+  - Elliptic curve models (Short Weierstrass, Twisted Edwards)
+  - Point representations (Affine, Projective, Extended)
+  - Scalar multiplication algorithms
+  - Pairing-based cryptography (Miller's algorithm, BLS curves)
+  - Polynomial commitments (KZG scheme)
+  - Digital signatures (ECDSA)
+
 ## Testing
 
 Run the test suite with:
